@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#10111a"><title>WebSynth</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles (8).css">
 </head>
 <body><main class="app">
-  <header class="topbar"><div><p class="eyebrow">MLH UBH XV</p><h1>WebSynth<span class="dot">.</span></h1><p class="subhead">Subtractive synth · Piano roll · MIDI import</p></div><div class="status" role="status"><span class="status-light"></span><span id="statusText">Ready — click a piano key to activate audio</span></div></header>
+  <header class="topbar"><div><p class="eyebrow">MLH UBH XV</p><h1>WebSynth<span class="dot">.</span></h1><p class="subhead">Web Based Synthesizer</p></div><div class="status" role="status"><span class="status-light"></span><span id="statusText">Ready — click a piano key to activate audio</span></div></header>
   <div class="panels">
     <section class="panel"><div class="panel-header"><span class="num">01</span><h2>OSCILLATOR</h2></div><p class="help">One oscillator per note · Polyphonic</p>
       <div class="wave-picker" id="wavePicker">
@@ -14,6 +14,10 @@
         <button class="wave" data-wave="triangle">△ <span>TRIANGLE</span></button>
         <button class="wave active" data-wave="sawtooth">╱ <span>SAW</span></button>
         <button class="wave" data-wave="square">▣ <span>SQUARE</span></button>
+        <button type="button" id="savePreset">Save Preset</button>
+        <button type="button" id="loadPreset">Load Preset</button>
+        
+        <input type="file" id="presetFile" accept=".json" hidden>
       </div>
     </section>
     <section class="panel"><div class="panel-header"><span class="num">02</span><h2>AMPLITUDE / ADSR</h2></div><p class="help">Shape each note over time</p>
@@ -29,9 +33,9 @@
       <button type="button" class="panic" id="panic">STOP ALL NOTES</button>
     </section>
   </div>
-  <section class="keyboard-section"><div class="keyboard-heading"><div><p class="eyebrow">INSTRUMENT</p><h2>EXTENDED KEYBOARD</h2></div><p>Three octaves · Play with mouse or touch · Scroll horizontally on smaller screens</p></div>
+  <section class="keyboard-section"><div class="keyboard-heading"><div><p class="eyebrow">INSTRUMENT</p><h2></h2></div><p> Play with mouse or touch · Scroll horizontally on smaller screens</p></div>
     <div class="keyboard-scroll"><div id="keyboard" class="keyboard" aria-label="Playable three-octave piano"></div></div>
-    <p class="footnote">C3–B5 (36 semitones) · MIDI notes 48–83 · No physical keyboard mapping needed</p>
+    <p class="footnote">C3–B5 (36 semitones) · MIDI notes 48–83 </p>
   </section>
   <section class="sequencer-section"><div class="panel-header"><span class="num">04</span><h2>PIANO ROLL / SEQUENCER</h2></div>
     <p class="help">Click a cell to add a note. Click a note again to remove it. Each cell is a sixteenth note; notes can extend over multiple cells.</p>
@@ -43,11 +47,12 @@
       <button type="button" id="playPattern" class="primary">▶ Play</button><button type="button" id="stopPattern">■ Stop</button>
       <label class="switch"><input id="loop" type="checkbox" checked> Loop</label>
       <button type="button" id="clearPattern">Clear</button>
+      <button type="button" id="exportWav" class="primary">↓ Export WAV</button>
+      <button type="button" id="exportPattern" class="primary">↓ Export MIDI</button>
       <label class="file-button">Import MIDI (.mid)<input type="file" id="midiFile" accept=".mid,.midi,audio/midi" hidden></label>
-      <button type="button" id="exportPattern">Export Audio</button>
     </div>
     <div class="roll-shell" id="rollShell"><div class="piano-roll" id="pianoRoll" role="grid" aria-label="Piano roll sequencer"></div></div>
     <div class="roll-footer"><span id="rollInfo">0 notes · 4 measures</span><span id="importStatus" role="status">MIDI import supports standard Type 0 and Type 1 files.</span></div>
   </section>
-  <footer>v0.3 · One oscillator · Piano roll / MIDI import · WAV export comes next</footer>
+  <footer>v0.5 · WAV + MIDI export</footer>
 </main><script type="module" src="main.js"></script></body></html>

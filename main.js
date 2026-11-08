@@ -1,5 +1,7 @@
 import {SpectraSynth} from './synth.js';
 import {readMidi} from './midi.js';
+import {renderPatternToWav} from './exporter.js';
+import {encodePatternToMidi} from './midi-export.js';
 const synth=new SpectraSynth();
 const $=id=>document.getElementById(id);
 const status=$('statusText');
@@ -123,6 +125,33 @@ function renderRoll(){
   }
   roll.appendChild(frag);updateInfo();
 }
+// Export a valid MIDI file with piano-roll notes, tempo and time signature.
+$('exportPattern').addEventListener('click', () => {
+  if (!notes.size) {
+    $('importStatus').textContent = 'Add or import some notes before exporting MIDI.';
+    return;
+  }
+  try {
+    const file = encodePatternToMidi({
+      notes: [...notes.values()].map(n => ({...n})),
+      bpm: selectedBpm(),
+      numerator: Number($('timeSig').value),
+      totalSteps: configuredSteps()
+    });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'WebSynth-' + selectedBpm() + 'bpm.mid';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    $('importStatus').textContent = 'MIDI exported successfully (' + notes.size + ' notes).';
+  } catch (error) {
+    console.error('MIDI export failed', error);
+    $('importStatus').textContent = 'MIDI export failed: ' + error.message;
+  }
+});
 $('pianoRoll').addEventListener('click',e=>{
   const cell=e.target.closest('.roll-cell');if(!cell)return;
   const pitch=Number(cell.dataset.pitch),step=Number(cell.dataset.step);
@@ -226,3 +255,147 @@ $('midiFile').addEventListener('change',async e=>{
   finally{e.target.value='';}
 });
 renderRoll();
+
+
+function savePreset() {
+    const preset = {
+        name: "SPECTRA Preset",
+        version: 1,
+        patch: { ...synth.patch }
+    };
+
+    const blob = new Blob(
+        [JSON.stringify(preset, null, 2)],
+        { type: "application/json" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "WSpreset.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function loadPreset(preset) {
+    if (!preset || !preset.patch) {
+        throw new Error("Invalid preset file");
+    }
+
+    const patch = preset.patch;
+
+    // Restore waveform
+    if (["sine", "triangle", "sawtooth", "square"]
+        .includes(patch.waveform)) {
+
+        document.querySelectorAll("[data-wave]")
+            .forEach(button => {
+                button.classList.toggle(
+                    "active",
+                    button.dataset.wave === patch.waveform
+                );
+            });
+
+        synth.setParameter("waveform", patch.waveform);
+    }
+
+    // Restore slider values
+    const parameters = [
+        "attack",
+        "decay",
+        "sustain",
+        "release",
+        "cutoff",
+        "resonance",
+        "volume"
+    ];
+
+    for (const key of parameters) {
+        const slider = document.getElementById(key);
+        const value = patch[key];
+
+        if (!slider || typeof value !== "number"
+            || !Number.isFinite(value)) continue;
+
+        if (key === "cutoff") {
+            // Convert frequency back to slider position
+            const frequency = Math.max(80, Math.min(16000, value));
+            slider.value = 100 * Math.log(frequency / 80)
+                / Math.log(16000 / 80);
+        } else {
+            slider.value = value;
+        }
+
+        // Uses existing slider listeners to update synth and labels
+        slider.dispatchEvent(new Event("input"));
+    }
+}
+
+// Save button
+document.getElementById("savePreset")
+    .addEventListener("click", savePreset);
+
+// Load button
+document.getElementById("loadPreset")
+    .addEventListener("click", () => {
+        document.getElementById("presetFile").click();
+    });
+
+// Read uploaded preset
+document.getElementById("presetFile")
+    .addEventListener("change", async event => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            const preset = JSON.parse(await file.text());
+            loadPreset(preset);
+            alert("Preset loaded successfully!");
+        } catch (error) {
+            alert("Could not load preset: " + error.message);
+        }
+
+        event.target.value = "";
+    });
+
+
+// Export the current piano-roll pattern to a DAW-compatible 16-bit PCM WAV.
+$('exportWav').addEventListener('click', async () => {
+  const button = $('exportWav');
+  if (button.disabled) return;
+  if (!notes.size) {
+    $('importStatus').textContent = 'Add or import some notes before exporting WAV.';
+    return;
+  }
+  button.disabled = true;
+  button.textContent = 'Rendering…';
+  $('importStatus').textContent = 'Rendering WAV audio…';
+  try {
+    // Snapshot the project so changing controls cannot affect an in-progress render.
+    const wav = await renderPatternToWav({
+      notes: [...notes.values()].map(n => ({ ...n })),
+      bpm: selectedBpm(),
+      totalSteps: configuredSteps(),
+      patch: { ...synth.patch }
+    });
+    const url = URL.createObjectURL(wav);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'WebSynth-' + selectedBpm() + 'bpm.wav';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    $('importStatus').textContent = 'WAV exported successfully (' + (wav.size / 1048576).toFixed(2) + ' MB).';
+  } catch (error) {
+    console.error('WAV export failed', error);
+    $('importStatus').textContent = 'WAV export failed: ' + error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = '↓ Export WAV';
+  }
+});
