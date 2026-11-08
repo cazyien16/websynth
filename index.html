@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10111a"><title>WebSynth</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body><main class="app">
+  <header class="topbar"><div><p class="eyebrow">MLH UBH XV</p><h1>WebSynth<span class="dot">.</span></h1><p class="subhead">Subtractive synth · Piano roll · MIDI import</p></div><div class="status" role="status"><span class="status-light"></span><span id="statusText">Ready — click a piano key to activate audio</span></div></header>
+  <div class="panels">
+    <section class="panel"><div class="panel-header"><span class="num">01</span><h2>OSCILLATOR</h2></div><p class="help">One oscillator per note · Polyphonic</p>
+      <div class="wave-picker" id="wavePicker">
+        <button class="wave" data-wave="sine">∿ <span>SINE</span></button>
+        <button class="wave" data-wave="triangle">△ <span>TRIANGLE</span></button>
+        <button class="wave active" data-wave="sawtooth">╱ <span>SAW</span></button>
+        <button class="wave" data-wave="square">▣ <span>SQUARE</span></button>
+      </div>
+    </section>
+    <section class="panel"><div class="panel-header"><span class="num">02</span><h2>AMPLITUDE / ADSR</h2></div><p class="help">Shape each note over time</p>
+      <div class="control"><div class="control-row"><label for="attack">Attack</label><output id="attackValue"></output></div><input id="attack" type="range" min="0.005" max="2" step="0.005" value="0.015"></div>
+      <div class="control"><div class="control-row"><label for="decay">Decay</label><output id="decayValue"></output></div><input id="decay" type="range" min="0.005" max="2" step="0.005" value="0.2"></div>
+      <div class="control"><div class="control-row"><label for="sustain">Sustain</label><output id="sustainValue"></output></div><input id="sustain" type="range" min="0" max="1" step="0.01" value="0.65"></div>
+      <div class="control"><div class="control-row"><label for="release">Release</label><output id="releaseValue"></output></div><input id="release" type="range" min="0.01" max="3" step="0.01" value="0.22"></div>
+    </section>
+    <section class="panel"><div class="panel-header"><span class="num">03</span><h2>FILTER / OUTPUT</h2></div><p class="help">Low-pass filter and master level</p>
+      <div class="control"><div class="control-row"><label for="cutoff">Cutoff</label><output id="cutoffValue"></output></div><input id="cutoff" type="range" min="0" max="100" value="87"></div>
+      <div class="control"><div class="control-row"><label for="resonance">Resonance (Q)</label><output id="resonanceValue"></output></div><input id="resonance" type="range" min="0.1" max="15" step="0.1" value="0.7"></div>
+      <div class="control"><div class="control-row"><label for="volume">Master volume</label><output id="volumeValue"></output></div><input id="volume" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+      <button type="button" class="panic" id="panic">STOP ALL NOTES</button>
+    </section>
+  </div>
+  <section class="keyboard-section"><div class="keyboard-heading"><div><p class="eyebrow">INSTRUMENT</p><h2>EXTENDED KEYBOARD</h2></div><p>Three octaves · Play with mouse or touch · Scroll horizontally on smaller screens</p></div>
+    <div class="keyboard-scroll"><div id="keyboard" class="keyboard" aria-label="Playable three-octave piano"></div></div>
+    <p class="footnote">C3–B5 (36 semitones) · MIDI notes 48–83 · No physical keyboard mapping needed</p>
+  </section>
+  <section class="sequencer-section"><div class="panel-header"><span class="num">04</span><h2>PIANO ROLL / SEQUENCER</h2></div>
+    <p class="help">Click a cell to add a note. Click a note again to remove it. Each cell is a sixteenth note; notes can extend over multiple cells.</p>
+    <div class="transport">
+      <label>BPM <input type="number" id="bpm" value="120" min="40" max="240" step="1"></label>
+      <label>Time signature <select id="timeSig"><option value="4">4/4</option><option value="3">3/4</option><option value="2">2/4</option><option value="6">6/4</option></select></label>
+      <label>Measures <select id="measures"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></label>
+      <label>Note length <select id="noteLength"><option value="1">1/16</option><option value="2">1/8</option><option value="4" selected>1/4</option><option value="8">1/2</option><option value="16">Whole</option></select></label>
+      <button type="button" id="playPattern" class="primary">▶ Play</button><button type="button" id="stopPattern">■ Stop</button>
+      <label class="switch"><input id="loop" type="checkbox" checked> Loop</label>
+      <button type="button" id="clearPattern">Clear</button>
+      <label class="file-button">Import MIDI (.mid)<input type="file" id="midiFile" accept=".mid,.midi,audio/midi" hidden></label>
+    </div>
+    <div class="roll-shell" id="rollShell"><div class="piano-roll" id="pianoRoll" role="grid" aria-label="Piano roll sequencer"></div></div>
+    <div class="roll-footer"><span id="rollInfo">0 notes · 4 measures</span><span id="importStatus" role="status">MIDI import supports standard Type 0 and Type 1 files.</span></div>
+  </section>
+  <footer>v0.3 · One oscillator · Piano roll / MIDI import · WAV export comes next</footer>
+</main><script type="module" src="main.js"></script></body></html>
