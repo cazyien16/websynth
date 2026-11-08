@@ -1,228 +1,63 @@
-import {SpectraSynth} from './synth.js';
-import {readMidi} from './midi.js';
-const synth=new SpectraSynth();
-const $=id=>document.getElementById(id);
-const status=$('statusText');
-const midiName=n=>{
-  const names=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
-  return names[n%12]+(Math.floor(n/12)-1);
-};
-const isBlack=n=>[1,3,6,8,10].includes(n%12);
-const cutoffFromSlider=v=>80*Math.pow(16000/80,Number(v)/100);
-for(const [key,fmt,convert] of [
-  ['attack',v=>v.toFixed(3)+' s'],['decay',v=>v.toFixed(2)+' s'],
-  ['sustain',v=>Math.round(v*100)+'%'],['release',v=>v.toFixed(2)+' s'],
-  ['cutoff',v=>Math.round(v).toLocaleString()+' Hz',cutoffFromSlider],
-  ['resonance',v=>v.toFixed(1)],['volume',v=>Math.round(v*100)+'%']
-]) {
-  const slider=$(key), output=$(key+'Value');
-  const update=()=>{const v=convert?convert(slider.value):Number(slider.value);synth.setParameter(key,v);output.textContent=fmt(v);};
-  slider.addEventListener('input',update);update();
-}
-for(const button of document.querySelectorAll('[data-wave]')) {
-  button.addEventListener('click',()=>{
-    synth.setParameter('waveform',button.dataset.wave);
-    for(const b of document.querySelectorAll('[data-wave]'))b.classList.toggle('active',b===button);
-  });
-}
-// Extended keyboard: C3–B5, 21 white keys and their intervening black keys.
-const keyElements=new Map(), holders=new Map(), pointers=new Map();
-const keyboard=$('keyboard');
-let whiteIndex=0;
-for(let note=48;note<=83;note++){
-  const black=isBlack(note);
-  const button=document.createElement('button');
-  button.type='button';button.className='piano-key '+(black?'black':'white');
-  button.dataset.note=note;
-  button.title=midiName(note);
-  button.setAttribute('aria-label','Play '+midiName(note));
-  if(black)button.style.setProperty('--index',whiteIndex);
-  else {button.innerHTML='<span>'+midiName(note)+'</span>';whiteIndex++;}
-  keyboard.appendChild(button);keyElements.set(note,button);
-}
-async function press(note,source){
-  let set=holders.get(note);
-  if(!set){set=new Set();holders.set(note,set);}
-  if(set.has(source))return;
-  const first=set.size===0;set.add(source);
-  keyElements.get(note)?.classList.add('pressed');
-  if(first)try{
-    await synth.noteOn(note);
-    if(!holders.has(note))synth.noteOff(note);
-    status.textContent='Audio running';
-  }catch(error){status.textContent='Audio error: '+error.message;release(note,source);}
-}
-function release(note,source){
-  const set=holders.get(note);if(!set)return;
-  set.delete(source);
-  if(!set.size){holders.delete(note);keyElements.get(note)?.classList.remove('pressed');synth.noteOff(note);}
-}
-function releaseAll(){
-  holders.clear();pointers.clear();
-  for(const b of keyElements.values())b.classList.remove('pressed');
-  synth.stopAll();
-}
-keyboard.addEventListener('pointerdown',e=>{
-  const target=e.target.closest('.piano-key');if(!target)return;
-  e.preventDefault();
-  const note=Number(target.dataset.note),source='p'+e.pointerId;
-  pointers.set(e.pointerId,{note,source});
-  target.setPointerCapture(e.pointerId);
-  press(note,source);
-});
-const endPointer=e=>{const data=pointers.get(e.pointerId);if(data){pointers.delete(e.pointerId);release(data.note,data.source);}};
-keyboard.addEventListener('pointerup',endPointer);keyboard.addEventListener('pointercancel',endPointer);keyboard.addEventListener('lostpointercapture',endPointer);
-window.addEventListener('blur',()=>{stopTransport();releaseAll();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){stopTransport();releaseAll();}});
-$('panic').addEventListener('click',()=>{stopTransport();releaseAll();status.textContent='All notes stopped';});
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif; background: #10111a; color: #f2f4f8; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 80% 0, #26223b 0, transparent 43%), #10111a; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+.app { max-width: 1180px; margin: 0 auto; padding: 38px 24px 52px; }
+.topbar { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 34px; }
+.eyebrow { margin: 0 0 8px; font-size: 11px; font-weight: 750; letter-spacing: .18em; color: #a394fb; }
+h1 { font-size: clamp(40px, 7vw, 70px); margin: 0; line-height: 1; letter-spacing: -.065em; font-weight: 850; }
+.dot { color: #ab96ff; }
+.subhead { color: #9a9aac; font-size: 14px; margin: 12px 0 0; }
+.status { display: flex; align-items: center; gap: 9px; color: #b9b8c9; background: #222331; border: 1px solid #383748; padding: 11px 14px; border-radius: 999px; font-size: 12px; }
+.status-light { width: 7px; height: 7px; background: #8be2aa; border-radius: 50%; flex-shrink: 0; }
+.panels { display: grid; grid-template-columns: minmax(340px, 1.5fr) minmax(260px, 1fr) minmax(260px, 1fr); gap: 15px; }
+.panel { background: #1b1c28; border: 1px solid #363646; border-radius: 18px; padding: 25px 23px; min-width: 0; }
+.panel-header { display: flex; align-items: center; gap: 10px; }
+.num { color: #a595f1; font-size: 12px; font-weight: 800; }
+h2 { margin: 0; font-size: 15px; letter-spacing: .07em; }
+.help { color: #87879d; font-size: 12px; margin: 10px 0 25px; }
+.wave-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 26px; }
+.wave { background: #252636; color: #b6b5c8; border: 1px solid #3d3c50; border-radius: 12px; min-height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; font-size: 10px; font-weight: 800; letter-spacing: .05em; }
+.wave-symbol { font-size: 30px; font-weight: 400; line-height: 1; }
+.wave.active, .wave:hover { color: #ebe5ff; background: #37304e; border-color: #ad9bff; }
+.control { margin: 0 0 22px; }
+.control-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; }
+.control-row label { color: #e2e1ec; }
+.control-row output { color: #b6a5ff; font-variant-numeric: tabular-nums; }
+input[type="range"] { display: block; width: 100%; margin: 12px 0 0; accent-color: #ac96ff; cursor: pointer; }
+.panic { margin-top: 4px; width: 100%; border: 1px solid #645a7a; background: #302a42; color: #e5dcff; font-weight: 700; border-radius: 10px; padding: 12px; font-size: 11px; letter-spacing: .08em; }
+.panic:hover { background: #44395f; }
+.keyboard-section { margin-top: 20px; padding: 27px 29px; border: 1px solid #363646; background: #1b1c28; border-radius: 18px; }
+.keyboard-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 24px; }
+.keyboard-heading p:not(.eyebrow) { color: #9796aa; font-size: 12px; margin: 0; text-align: right; }
+.keyboard-heading strong { color: #d7cafa; }
+.keyboard { position: relative; height: 215px; display: flex; gap: 3px; user-select: none; touch-action: none; }
+.piano-key { -webkit-tap-highlight-color: transparent; user-select: none; display: flex; justify-content: center; align-items: end; padding-bottom: 14px; font-size: 12px; font-weight: 700; }
+.piano-key.white { position: relative; flex: 1; background: linear-gradient(#f1eff8, #bfc0d0); border: 1px solid #eceaf3; border-radius: 0 0 10px 10px; color: #6f7088; }
+.piano-key.white.pressed { background: #ae9afa; color: #fff; }
+.piano-key.black { position: absolute; z-index: 1; top: 0; left: calc(var(--position) * 12.5% - 3.3%); width: 6.6%; height: 63%; background: linear-gradient(#27283b, #090a10); border: 1px solid #36374b; border-radius: 0 0 8px 8px; color: #c0bdd3; box-shadow: 0 5px 8px #0006; }
+.piano-key.black.pressed { background: #6952bf; }
+.footnote { display: flex; justify-content: space-between; gap: 20px; margin-top: 18px; color: #89889d; font-size: 11px; }
+button:focus-visible, input:focus-visible { outline: 2px solid #b9aaff; outline-offset: 3px; }
+@media (max-width: 850px) { .panels { grid-template-columns: 1fr 1fr; } .panel:last-child { grid-column: span 2; } .topbar { align-items: start; flex-direction: column; } }
+@media (max-width: 600px) { .app { padding: 24px 12px; } .panels { grid-template-columns: 1fr; } .panel:last-child { grid-column: auto; } .keyboard-section { padding: 18px 12px; } .keyboard-heading { align-items: start; flex-direction: column; } .keyboard-heading p:not(.eyebrow) { text-align: left; } .keyboard { height: 150px; } .footnote { flex-direction: column; gap: 5px; } }
 
-// First-edition piano roll; coordinates are 1/16-note steps, pitches MIDI 48..83.
-const notes=new Map(); // "pitch:step" => {pitch,step,length}; replaceable, independent note data
-let playing=false, timer=null, frame=null, transportStart=0, nextStep=0, lastPlayhead=-1;
-let totalSteps=64;
-const stepsPerMeasure=()=>Number($('timeSig').value)*4;
-const selectedMeasures=()=>Number($('measures').value);
-const configuredSteps=()=>stepsPerMeasure()*selectedMeasures();
-function selectedBpm(){return Math.max(40,Math.min(240,Number($('bpm').value)||120));}
-function noteKey(pitch,step){return pitch+':'+step;}
-function updateInfo(message=''){
-  $('rollInfo').textContent=`${notes.size} notes · ${selectedMeasures()} measures · ${selectedBpm()} BPM`;
-  if(message)$('importStatus').textContent=message;
-}
-function renderRoll(){
-  totalSteps=configuredSteps();
-  const roll=$('pianoRoll');
-  roll.replaceChildren();
-  const frag=document.createDocumentFragment();
-  const spacer=document.createElement('div');spacer.className='roll-header spacer';frag.appendChild(spacer);
-  const head=document.createElement('div');head.className='roll-header timeline';
-  head.style.width=(totalSteps*26)+'px';
-  for(let m=0;m<selectedMeasures();m++){
-    const mark=document.createElement('div');mark.className='measure-marker';
-    mark.style.width=(stepsPerMeasure()*26)+'px';mark.textContent='Measure '+(m+1);
-    head.appendChild(mark);
-  }
-  frag.appendChild(head);
-  for(let pitch=83;pitch>=48;pitch--){
-    const label=document.createElement('div');label.className='roll-label'+(isBlack(pitch)?' sharp':'');label.textContent=midiName(pitch);frag.appendChild(label);
-    const line=document.createElement('div');line.className='roll-line'+(isBlack(pitch)?' sharp':'');
-    line.dataset.pitch=pitch;
-    const covered=new Set();
-    for(const n of notes.values())if(n.pitch===pitch)for(let s=n.step;s<Math.min(totalSteps,n.step+n.length);s++)covered.add(s);
-    for(let s=0;s<totalSteps;s++){
-      const cell=document.createElement('button');cell.type='button';cell.className='roll-cell';
-      if(s%stepsPerMeasure()===0)cell.classList.add('bar');
-      else if(s%4===0)cell.classList.add('beat');
-      if(covered.has(s))cell.classList.add('note');
-      cell.dataset.step=s;cell.dataset.pitch=pitch;
-      cell.title=midiName(pitch)+' · beat '+(1+s/4);
-      cell.setAttribute('aria-label',`${midiName(pitch)}, step ${s+1}`);
-      line.appendChild(cell);
-    }
-    frag.appendChild(line);
-  }
-  roll.appendChild(frag);updateInfo();
-}
-$('pianoRoll').addEventListener('click',e=>{
-  const cell=e.target.closest('.roll-cell');if(!cell)return;
-  const pitch=Number(cell.dataset.pitch),step=Number(cell.dataset.step);
-  let existing=[...notes.values()].find(n=>n.pitch===pitch&&n.step<=step&&step<n.step+n.length);
-  if(existing)notes.delete(noteKey(existing.pitch,existing.step));
-  else {
-    let length=Math.min(Number($('noteLength').value),totalSteps-step);
-    // Avoid overlapping adjacent note starts on the same pitch.
-    for(const n of notes.values())if(n.pitch===pitch&&n.step>step)length=Math.min(length,n.step-step);
-    if(length>0)notes.set(noteKey(pitch,step),{pitch,step,length});
-  }
-  if(playing)stopTransport();
-  renderRoll();
-});
-$('clearPattern').addEventListener('click',()=>{stopTransport();notes.clear();renderRoll();updateInfo('Pattern cleared.');});
-for(const name of ['timeSig','measures'])$(name).addEventListener('change',()=>{
-  stopTransport();
-  const limit=configuredSteps();
-  for(const [key,n] of notes){
-    if(n.step>=limit)notes.delete(key);
-    else n.length=Math.min(n.length,limit-n.step);
-  }
-  renderRoll();
-});
-$('bpm').addEventListener('change',()=>{$('bpm').value=selectedBpm();stopTransport();updateInfo();});
-$('playPattern').addEventListener('click',async()=>{
-  if(playing){stopTransport();return;}
-  try{await synth.init();startTransport();}catch(error){status.textContent='Playback error: '+error.message;}
-});
-$('stopPattern').addEventListener('click',stopTransport);
-function startTransport(){
-  stopTransport();playing=true;nextStep=0;lastPlayhead=-1;
-  const ctx=synth.context;
-  transportStart=ctx.currentTime+.055;
-  $('playPattern').textContent='❚❚ Playing';status.textContent='Sequencer playing';
-  const secPerStep=60/selectedBpm()/4;
-  const schedule=()=>{
-    if(!playing)return;
-    const now=ctx.currentTime;
-    while(transportStart+nextStep*secPerStep < now+.15){
-      if(nextStep>=totalSteps){
-        if($('loop').checked)transportStart+=totalSteps*secPerStep;
-        else {if(now>=transportStart+totalSteps*secPerStep){stopTransport();return;}break;}
-        nextStep=0;
-      }
-      const s=nextStep;
-      for(const note of notes.values())if(note.step===s){
-        const time=transportStart+s*secPerStep;
-        synth.scheduleNote(note.pitch,time,note.length*secPerStep);
-      }
-      nextStep++;
-    }
-  };
-  schedule();timer=setInterval(schedule,25);
-  const animate=()=>{
-    if(!playing)return;
-    const now=ctx.currentTime;
-    let step=Math.floor((now-transportStart)/secPerStep);
-    if($('loop').checked)step=((step%totalSteps)+totalSteps)%totalSteps;
-    if(step>=totalSteps&&!$('loop').checked){stopTransport();return;}
-    if(step>=0&&step!==lastPlayhead){
-      for(const c of document.querySelectorAll('.roll-cell.playhead'))c.classList.remove('playhead');
-      for(const c of document.querySelectorAll(`.roll-cell[data-step="${step}"]`))c.classList.add('playhead');
-      lastPlayhead=step;
-    }
-    frame=requestAnimationFrame(animate);
-  };
-  frame=requestAnimationFrame(animate);
-}
-function stopTransport(){
-  if(timer!==null){clearInterval(timer);timer=null;}
-  if(frame!==null){cancelAnimationFrame(frame);frame=null;}
-  if(playing){synth.stopAll();playing=false;}
-  $('playPattern').textContent='▶ Play';
-  for(const c of document.querySelectorAll('.roll-cell.playhead'))c.classList.remove('playhead');
-  lastPlayhead=-1;
-}
-$('midiFile').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;
-  try{
-    const parsed=readMidi(await file.arrayBuffer());
-    stopTransport();notes.clear();
-    const wantedSig=[2,3,4,6].includes(parsed.numerator)?parsed.numerator:4;
-    $('timeSig').value=String(wantedSig);
-    $('bpm').value=parsed.bpm;
-    const totalWanted=Math.max(1,...parsed.notes.map(n=>Math.round((n.startBeats+n.durationBeats)*4)));
-    const possibleMeasures=[1,2,4,8];
-    const bars=Math.ceil(totalWanted/(wantedSig*4));
-    const selected=possibleMeasures.find(v=>v>=bars)||8;
-    $('measures').value=String(selected);
-    const maxStep=selected*wantedSig*4;
-    let ignored=0;
-    for(const n of parsed.notes){
-      const step=Math.round(n.startBeats*4),length=Math.max(1,Math.round(n.durationBeats*4));
-      if(n.pitch<48||n.pitch>83||step>=maxStep){ignored++;continue;}
-      notes.set(noteKey(n.pitch,step),{pitch:n.pitch,step,length:Math.min(length,maxStep-step)});
-    }
-    renderRoll();
-    updateInfo(`Imported ${notes.size} notes (${ignored} outside range). First tempo used; tempo changes not preserved. Notes quantized to 1/16.`);
-  }catch(error){$('importStatus').textContent='MIDI import failed: '+error.message;}
-  finally{e.target.value='';}
-});
-renderRoll();
+/* SPECTRA v0.2: compact three-oscillator module, inspired by classic subtractive synths. */
+.oscillator-panel { padding: 22px; }
+.oscillator-panel .help { margin-bottom: 16px; line-height: 1.55; }
+.oscillator-controls { display: flex; flex-direction: column; gap: 10px; }
+.osc-row { background: #242534; border: 1px solid #3b3b50; border-radius: 12px; padding: 13px; }
+.osc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.osc-number { color: #ddd5ff; font-weight: 850; font-size: 12px; letter-spacing: .08em; }
+.osc-label { color: #8b899f; font-weight: 800; font-size: 9px; letter-spacing: .14em; }
+.wave-picker.compact { grid-template-columns: repeat(4,1fr); gap: 5px; margin-bottom: 13px; }
+.wave-picker.compact .wave { min-height: 35px; padding: 4px 2px; border-radius: 7px; font-size: 10px; letter-spacing: 0; }
+.osc-knobs { display: grid; grid-template-columns: 78px minmax(0,1fr) minmax(0,1fr); gap: 12px; align-items: end; }
+.osc-knobs label { color: #bebdd1; font-size: 11px; min-width: 0; }
+.osc-knobs output { float: right; color: #c1aeff; font-size: 10px; }
+.osc-knobs input[type="range"] { margin-top: 10px; }
+.osc-knobs select { margin-top: 7px; display: block; background: #171925; color: #f1edff; border: 1px solid #4b4568; border-radius: 7px; width: 100%; padding: 7px; }
+.osc-tip { margin: 14px 0 0; font-size: 11px; color: #a3a0b7; line-height: 1.5; }
+@media (max-width: 1050px) { .panels { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .oscillator-panel { grid-column: 1/-1; } .panel:last-child { grid-column: auto; } }
+@media (max-width: 600px) { .panels { grid-template-columns: 1fr; } .oscillator-panel, .panel:last-child { grid-column: auto; } .osc-knobs { gap: 7px; grid-template-columns: 70px 1fr 1fr; } }
