@@ -1,63 +1,189 @@
-:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif; background: #10111a; color: #f2f4f8; }
-* { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 80% 0, #26223b 0, transparent 43%), #10111a; }
-button, input { font: inherit; }
-button { cursor: pointer; }
-.app { max-width: 1180px; margin: 0 auto; padding: 38px 24px 52px; }
-.topbar { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 34px; }
-.eyebrow { margin: 0 0 8px; font-size: 11px; font-weight: 750; letter-spacing: .18em; color: #a394fb; }
-h1 { font-size: clamp(40px, 7vw, 70px); margin: 0; line-height: 1; letter-spacing: -.065em; font-weight: 850; }
-.dot { color: #ab96ff; }
-.subhead { color: #9a9aac; font-size: 14px; margin: 12px 0 0; }
-.status { display: flex; align-items: center; gap: 9px; color: #b9b8c9; background: #222331; border: 1px solid #383748; padding: 11px 14px; border-radius: 999px; font-size: 12px; }
-.status-light { width: 7px; height: 7px; background: #8be2aa; border-radius: 50%; flex-shrink: 0; }
-.panels { display: grid; grid-template-columns: minmax(340px, 1.5fr) minmax(260px, 1fr) minmax(260px, 1fr); gap: 15px; }
-.panel { background: #1b1c28; border: 1px solid #363646; border-radius: 18px; padding: 25px 23px; min-width: 0; }
-.panel-header { display: flex; align-items: center; gap: 10px; }
-.num { color: #a595f1; font-size: 12px; font-weight: 800; }
-h2 { margin: 0; font-size: 15px; letter-spacing: .07em; }
-.help { color: #87879d; font-size: 12px; margin: 10px 0 25px; }
-.wave-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 26px; }
-.wave { background: #252636; color: #b6b5c8; border: 1px solid #3d3c50; border-radius: 12px; min-height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; font-size: 10px; font-weight: 800; letter-spacing: .05em; }
-.wave-symbol { font-size: 30px; font-weight: 400; line-height: 1; }
-.wave.active, .wave:hover { color: #ebe5ff; background: #37304e; border-color: #ad9bff; }
-.control { margin: 0 0 22px; }
-.control-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; }
-.control-row label { color: #e2e1ec; }
-.control-row output { color: #b6a5ff; font-variant-numeric: tabular-nums; }
-input[type="range"] { display: block; width: 100%; margin: 12px 0 0; accent-color: #ac96ff; cursor: pointer; }
-.panic { margin-top: 4px; width: 100%; border: 1px solid #645a7a; background: #302a42; color: #e5dcff; font-weight: 700; border-radius: 10px; padding: 12px; font-size: 11px; letter-spacing: .08em; }
-.panic:hover { background: #44395f; }
-.keyboard-section { margin-top: 20px; padding: 27px 29px; border: 1px solid #363646; background: #1b1c28; border-radius: 18px; }
-.keyboard-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 24px; }
-.keyboard-heading p:not(.eyebrow) { color: #9796aa; font-size: 12px; margin: 0; text-align: right; }
-.keyboard-heading strong { color: #d7cafa; }
-.keyboard { position: relative; height: 215px; display: flex; gap: 3px; user-select: none; touch-action: none; }
-.piano-key { -webkit-tap-highlight-color: transparent; user-select: none; display: flex; justify-content: center; align-items: end; padding-bottom: 14px; font-size: 12px; font-weight: 700; }
-.piano-key.white { position: relative; flex: 1; background: linear-gradient(#f1eff8, #bfc0d0); border: 1px solid #eceaf3; border-radius: 0 0 10px 10px; color: #6f7088; }
-.piano-key.white.pressed { background: #ae9afa; color: #fff; }
-.piano-key.black { position: absolute; z-index: 1; top: 0; left: calc(var(--position) * 12.5% - 3.3%); width: 6.6%; height: 63%; background: linear-gradient(#27283b, #090a10); border: 1px solid #36374b; border-radius: 0 0 8px 8px; color: #c0bdd3; box-shadow: 0 5px 8px #0006; }
-.piano-key.black.pressed { background: #6952bf; }
-.footnote { display: flex; justify-content: space-between; gap: 20px; margin-top: 18px; color: #89889d; font-size: 11px; }
-button:focus-visible, input:focus-visible { outline: 2px solid #b9aaff; outline-offset: 3px; }
-@media (max-width: 850px) { .panels { grid-template-columns: 1fr 1fr; } .panel:last-child { grid-column: span 2; } .topbar { align-items: start; flex-direction: column; } }
-@media (max-width: 600px) { .app { padding: 24px 12px; } .panels { grid-template-columns: 1fr; } .panel:last-child { grid-column: auto; } .keyboard-section { padding: 18px 12px; } .keyboard-heading { align-items: start; flex-direction: column; } .keyboard-heading p:not(.eyebrow) { text-align: left; } .keyboard { height: 150px; } .footnote { flex-direction: column; gap: 5px; } }
+import { SpectraSynth } from './synth.js';
 
-/* SPECTRA v0.2: compact three-oscillator module, inspired by classic subtractive synths. */
-.oscillator-panel { padding: 22px; }
-.oscillator-panel .help { margin-bottom: 16px; line-height: 1.55; }
-.oscillator-controls { display: flex; flex-direction: column; gap: 10px; }
-.osc-row { background: #242534; border: 1px solid #3b3b50; border-radius: 12px; padding: 13px; }
-.osc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.osc-number { color: #ddd5ff; font-weight: 850; font-size: 12px; letter-spacing: .08em; }
-.osc-label { color: #8b899f; font-weight: 800; font-size: 9px; letter-spacing: .14em; }
-.wave-picker.compact { grid-template-columns: repeat(4,1fr); gap: 5px; margin-bottom: 13px; }
-.wave-picker.compact .wave { min-height: 35px; padding: 4px 2px; border-radius: 7px; font-size: 10px; letter-spacing: 0; }
-.osc-knobs { display: grid; grid-template-columns: 78px minmax(0,1fr) minmax(0,1fr); gap: 12px; align-items: end; }
-.osc-knobs label { color: #bebdd1; font-size: 11px; min-width: 0; }
-.osc-knobs output { float: right; color: #c1aeff; font-size: 10px; }
-.osc-knobs input[type="range"] { margin-top: 10px; }
-.osc-knobs select { margin-top: 7px; display: block; background: #171925; color: #f1edff; border: 1px solid #4b4568; border-radius: 7px; width: 100%; padding: 7px; }
-.osc-tip { margin: 14px 0 0; font-size: 11px; color: #a3a0b7; line-height: 1.5; }
-@media (max-width: 1050px) { .panels { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .oscillator-panel { grid-column: 1/-1; } .panel:last-child { grid-column: auto; } }
-@media (max-width: 600px) { .panels { grid-template-columns: 1fr; } .oscillator-panel, .panel:last-child { grid-column: auto; } .osc-knobs { gap: 7px; grid-template-columns: 70px 1fr 1fr; } }
+const synth = new SpectraSynth();
+const status = document.getElementById('statusText');
+const keyboard = document.getElementById('keyboard');
+const cutoffFromSlider = (v) => 80 * Math.pow(16000 / 80, Number(v) / 100);
+
+const controls = [
+  ['attack', 'attack', v => `${v.toFixed(2)} s`],
+  ['decay', 'decay', v => `${v.toFixed(2)} s`],
+  ['sustain', 'sustain', v => `${Math.round(v * 100)}%`],
+  ['release', 'release', v => `${v.toFixed(2)} s`],
+  ['cutoff', 'cutoff', v => `${Math.round(v).toLocaleString()} Hz`, cutoffFromSlider],
+  ['resonance', 'resonance', v => v.toFixed(1)],
+  ['volume', 'volume', v => `${Math.round(v * 100)}%`],
+];
+
+for (const [id, parameter, format, convert] of controls) {
+  const slider = document.getElementById(id);
+  const output = document.getElementById(`${id}Value`);
+  const update = () => {
+    const value = convert ? convert(slider.value) : Number(slider.value);
+    synth.setParameter(parameter, value);
+    output.textContent = format(value);
+  };
+  slider.addEventListener('input', update);
+  update();
+}
+
+// Build oscillator rows dynamically so the synth engine and UI share the same indexing.
+const waveNames = [
+  ['sine', 'Sine'], ['triangle', 'Triangle'],
+  ['sawtooth', 'Saw'], ['square', 'Square'],
+];
+const oscContainer = document.getElementById('oscillatorControls');
+for (let index = 0; index < synth.patch.oscillators.length; index++) {
+  const initial = synth.patch.oscillators[index];
+  const row = document.createElement('div');
+  row.className = 'osc-row';
+  row.innerHTML = `
+    <div class="osc-head"><span class="osc-number">OSC ${index + 1}</span><span class="osc-label">${index === 0 ? 'PRIMARY' : 'LAYER'}</span></div>
+    <div class="wave-picker compact" role="group" aria-label="Oscillator ${index + 1} waveform">
+      ${waveNames.map(([value, label]) => `<button type="button" class="wave ${initial.waveform === value ? 'active' : ''}" data-wave="${value}" aria-pressed="${initial.waveform === value}">${label}</button>`).join('')}
+    </div>
+    <div class="osc-knobs">
+      <label>Octave <select class="octave" aria-label="Oscillator ${index + 1} octave">
+        ${[-2,-1,0,1,2].map(n => `<option value="${n}" ${initial.octave === n ? 'selected' : ''}>${n > 0 ? '+' : ''}${n}</option>`).join('')}
+      </select></label>
+      <label>Fine <output class="detune-value">${initial.detune > 0 ? '+' : ''}${initial.detune}¢</output>
+        <input class="detune" type="range" min="-100" max="100" step="1" value="${initial.detune}" aria-label="Oscillator ${index + 1} fine tune">
+      </label>
+      <label>Level <output class="level-value">${Math.round(initial.level * 100)}%</output>
+        <input class="level" type="range" min="0" max="100" step="1" value="${Math.round(initial.level * 100)}" aria-label="Oscillator ${index + 1} level">
+      </label>
+    </div>`;
+  oscContainer.appendChild(row);
+  for (const button of row.querySelectorAll('[data-wave]')) {
+    button.addEventListener('click', () => {
+      synth.setOscillatorParameter(index, 'waveform', button.dataset.wave);
+      for (const other of row.querySelectorAll('[data-wave]')) {
+        const selected = other === button;
+        other.classList.toggle('active', selected);
+        other.setAttribute('aria-pressed', String(selected));
+      }
+    });
+  }
+  row.querySelector('.octave').addEventListener('change', e => synth.setOscillatorParameter(index, 'octave', Number(e.target.value)));
+  row.querySelector('.detune').addEventListener('input', e => {
+    const n = Number(e.target.value);
+    synth.setOscillatorParameter(index, 'detune', n);
+    row.querySelector('.detune-value').textContent = `${n > 0 ? '+' : ''}${n}¢`;
+  });
+  row.querySelector('.level').addEventListener('input', e => {
+    const n = Number(e.target.value);
+    synth.setOscillatorParameter(index, 'level', n / 100);
+    row.querySelector('.level-value').textContent = `${n}%`;
+  });
+}
+
+// C4 through C5: white-note keyboard keys and black notes between them.
+const keyMap = {
+  KeyA: 60, KeyW: 61, KeyS: 62, KeyE: 63,
+  KeyD: 64, KeyF: 65, KeyT: 66, KeyG: 67,
+  KeyY: 68, KeyH: 69, KeyU: 70, KeyJ: 71, KeyK: 72,
+};
+const keyLabels = Object.fromEntries(Object.entries(keyMap).map(([code, note]) => [note, code.replace('Key', '')]));
+const whiteNotes = [60, 62, 64, 65, 67, 69, 71, 72];
+const blackAfter = new Map([[60, 61], [62, 63], [65, 66], [67, 68], [69, 70]]);
+const elements = new Map();
+const sources = new Map(); // note => set of input IDs; allows mouse and keyboard together
+const pointers = new Map();
+
+function setActive(note, active) {
+  elements.get(note)?.classList.toggle('pressed', active);
+}
+async function press(note, source) {
+  let holders = sources.get(note);
+  if (!holders) { holders = new Set(); sources.set(note, holders); }
+  if (holders.has(source)) return;
+  const alreadyPlaying = holders.size > 0;
+  holders.add(source);
+  setActive(note, true);
+  if (!alreadyPlaying) {
+    try {
+      await synth.noteOn(note);
+      // Handles releasing a key before the audio context finishes unlocking.
+      if (!sources.get(note)?.size) synth.noteOff(note);
+      status.textContent = 'Audio running';
+    } catch (error) {
+      status.textContent = `Audio error: ${error.message}`;
+      release(note, source);
+    }
+  }
+}
+function release(note, source) {
+  const holders = sources.get(note);
+  if (!holders) return;
+  holders.delete(source);
+  if (!holders.size) {
+    sources.delete(note);
+    setActive(note, false);
+    synth.noteOff(note);
+  }
+}
+function releaseAll() {
+  for (const [note] of sources) { sources.delete(note); setActive(note, false); }
+  pointers.clear();
+  synth.stopAll();
+}
+
+for (let i = 0; i < whiteNotes.length; i++) {
+  const note = whiteNotes[i];
+  const white = document.createElement('button');
+  white.type = 'button'; white.className = 'piano-key white';
+  white.dataset.note = String(note);
+  white.innerHTML = `<span>${keyLabels[note]}</span>`;
+  white.setAttribute('aria-label', `Play MIDI note ${note}`);
+  white.style.setProperty('--position', String(i));
+  keyboard.appendChild(white);
+  elements.set(note, white);
+
+  if (blackAfter.has(note)) {
+    const blackNote = blackAfter.get(note);
+    const black = document.createElement('button');
+    black.type = 'button'; black.className = 'piano-key black';
+    black.dataset.note = String(blackNote);
+    black.innerHTML = `<span>${keyLabels[blackNote]}</span>`;
+    black.setAttribute('aria-label', `Play MIDI note ${blackNote}`);
+    black.style.setProperty('--position', String(i + 1));
+    keyboard.appendChild(black);
+    elements.set(blackNote, black);
+  }
+}
+
+keyboard.addEventListener('pointerdown', (event) => {
+  const key = event.target.closest('.piano-key');
+  if (!key) return;
+  event.preventDefault();
+  const note = Number(key.dataset.note);
+  const source = `pointer-${event.pointerId}`;
+  pointers.set(event.pointerId, { note, source });
+  keyboard.setPointerCapture(event.pointerId);
+  press(note, source);
+});
+function pointerRelease(event) {
+  const held = pointers.get(event.pointerId);
+  if (!held) return;
+  pointers.delete(event.pointerId);
+  release(held.note, held.source);
+}
+keyboard.addEventListener('pointerup', pointerRelease);
+keyboard.addEventListener('pointercancel', pointerRelease);
+keyboard.addEventListener('lostpointercapture', pointerRelease);
+
+window.addEventListener('keydown', (event) => {
+  if (event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+  const note = keyMap[event.code];
+  if (note === undefined) return;
+  event.preventDefault();
+  press(note, `key-${event.code}`);
+});
+window.addEventListener('keyup', (event) => {
+  const note = keyMap[event.code];
+  if (note !== undefined) release(note, `key-${event.code}`);
+});
+window.addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
+document.getElementById('panic').addEventListener('click', releaseAll);
